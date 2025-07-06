@@ -1,5 +1,32 @@
 import React, { useState } from "react";
-import menu from "./menuData";
+import rawMenu from "./menuData";
+
+
+import SauceSelector from "./SauceSelector";
+const defaultFlavors = [
+  "Hot Sauce",
+  "BBQ",
+  "Buffalo",
+  "Ketchup",
+  "Ranch",
+  "Honey Mustard",
+  "Cocktail",
+  "Sweet Chili",
+  "Blue Cheese",
+  "Tartar",
+  "Slaw"
+];
+
+
+const menu = rawMenu.flat().map(item => ({
+  ...item,
+  availableFlavors: item.availableFlavors || defaultFlavors,
+  freeSauceCount: item.freeSauceCount ?? 0
+}));
+
+
+
+
 
 export default function Menu({ onAddToCart }) {
   const[drawerOpen, setDrawerOpen] = useState(false);
@@ -12,14 +39,20 @@ export default function Menu({ onAddToCart }) {
 
   const [comboChoices, setComboChoices] = useState({});
   const [wingChoices, setWingChoices] = useState({});
+  const [sauceSelections, setSauceSelections] = useState({});
+  const [itemOptions, setItemOptions] = useState({});
+
+
 
   
   const isWing = (item) => item.category.includes("Wing");
 
   const getWingCount = (item) => {
+    if (!item || typeof item.name !== "string") return 0;
     const match = item.name.match(/(\d+)\s*(pc\s*)?(Wings)/i);
     return match ? parseInt(match[1]) : 0;
   };
+  
 
   return (
     <div className="bg-white shadow-md rounded-lg p-6 border space-y-6">
@@ -157,8 +190,9 @@ export default function Menu({ onAddToCart }) {
                       )}
                     </div>
                     <span className="text-gray-800 font-semibold text-base">
-                      ${item.price.toFixed(2)}
-                    </span>
+  ${typeof item.price === "number" ? item.price.toFixed(2) : "N/A"}
+</span>
+
                   </div>
 
                  {/* Substitution Dropdown for Combos OR Dinners */}
@@ -182,67 +216,143 @@ export default function Menu({ onAddToCart }) {
   </div>
 )}
 
-{/* Wing Options — Only for EXACTLY 6 Wings */}
 {isWing(item) && getWingCount(item) >= 6 && (
-  <div className="mt-2 space-y-1">
+  <div className="mt-2 space-y-2">
     <label className="text-sm font-medium text-gray-700">Wing Options:</label>
     <div className="flex gap-3 flex-wrap text-sm">
-
-      {/* Flats (only if exactly 6) */}
       {getWingCount(item) === 6 && (
-        <label>
+        <label className="flex items-center gap-1">
           <input
             type="checkbox"
+            checked={wingChoices[item.id]?.allFlats || false}
             onChange={(e) =>
               setWingChoices((prev) => ({
                 ...prev,
                 [item.id]: {
                   ...prev[item.id],
-                  allFlats: e.target.checked
-                }
+                  allFlats: e.target.checked,
+                },
               }))
             }
           />
-          <span className="ml-1">All Flats (+$1.00)</span>
+          <span>All Flats (+$1.00)</span>
         </label>
       )}
 
-      {/* Drums (only if exactly 6) */}
       {getWingCount(item) === 6 && (
-        <label>
+        <label className="flex items-center gap-1">
           <input
             type="checkbox"
+            checked={wingChoices[item.id]?.allDrums || false}
             onChange={(e) =>
               setWingChoices((prev) => ({
                 ...prev,
                 [item.id]: {
                   ...prev[item.id],
-                  allDrums: e.target.checked
-                }
+                  allDrums: e.target.checked,
+                },
               }))
             }
           />
-          <span className="ml-1">All Drums (+$1.00)</span>
+          <span>All Drums (+$1.00)</span>
         </label>
       )}
 
-      {/* Sauced (available for 6, 12, 18...) */}
-      <label>
+      <label className="flex items-center gap-1">
         <input
           type="checkbox"
+          checked={wingChoices[item.id]?.sauced || false}
           onChange={(e) =>
             setWingChoices((prev) => ({
               ...prev,
               [item.id]: {
                 ...prev[item.id],
-                sauced: e.target.checked
-              }
+                sauced: e.target.checked,
+                saucedFlavor: e.target.checked ? prev[item.id]?.saucedFlavor || "" : "",
+              },
             }))
           }
         />
-        <span className="ml-1">Sauced (+$1.25 per 6)</span>
+        <span>Sauced (+$1.25 per 6)</span>
       </label>
+    </div>
 
+    {wingChoices[item.id]?.sauced && (
+      <div className="mt-2">
+        <label className="text-sm font-medium text-gray-700">Choose Sauce Flavor:</label>
+        <select
+          value={wingChoices[item.id]?.saucedFlavor || ""}
+          onChange={(e) =>
+            setWingChoices((prev) => ({
+              ...prev,
+              [item.id]: {
+                ...prev[item.id],
+                saucedFlavor: e.target.value,
+              },
+            }))
+          }
+          className="mt-1 border rounded px-2 py-1 text-sm w-full"
+        >
+          <option value="">-- Select One --</option>
+          <option value="BBQ">BBQ</option>
+          <option value="Buffalo">Buffalo</option>
+          <option value="Texas Pete">Texas Pete</option>
+          <option value="Lemon Pepper">Lemon Pepper</option>
+          <option value="Garlic Parmesan">Garlic Parmesan</option>
+          <option value="Teriyaki">Teriyaki</option>
+        </select>
+      </div>
+    )}
+  </div>
+)}
+
+
+{/* Sauce Selector (just above Add to Cart) */}
+<div className="mt-2">
+  <SauceSelector
+    freeSauceCount={item.freeSauceCount || 0}
+    availableFlavors={item.availableFlavors || []}
+    onChange={selection =>
+      setSauceSelections(prev => ({
+        ...prev,
+        [item.id]: selection
+      }))
+    }
+  />
+</div>
+{item.options && Array.isArray(item.options) && (
+  <div className="mt-2">
+    <label className="text-sm font-medium text-gray-700">
+      {item.name.toLowerCase().includes("egg roll") ? "Choose Fillings (Pick 2):" : "Choose Toppings:"}
+    </label>
+    <div className="flex flex-wrap gap-2 mt-1 text-sm">
+      {item.options.map((option) => (
+        <label key={option} className="flex items-center gap-1">
+          <input
+            type="checkbox"
+            checked={(itemOptions[item.id] || []).includes(option)}
+            onChange={(e) => {
+              const selected = e.target.checked;
+              setItemOptions((prev) => {
+                const current = prev[item.id] || [];
+                let updated;
+
+                if (selected) {
+                  updated = [...current, option];
+                } else {
+                  updated = current.filter((val) => val !== option);
+                }
+
+                return {
+                  ...prev,
+                  [item.id]: updated.slice() 
+                };
+              });
+            }}
+          />
+          {option}
+        </label>
+      ))}
     </div>
   </div>
 )}
@@ -254,11 +364,18 @@ export default function Menu({ onAddToCart }) {
     onClick={() => {
       const comboSub = comboChoices[item.id];
       const wingOpts = wingChoices[item.id] || {};
-      
+      const selectedOptions = itemOptions[item.id] || [];
+
+      // Grab sauces (or defaults if none)
+      const sauces = sauceSelections[item.id] || {
+        sauces: [],
+        extras: 0,
+        extrasPrice: 0
+      };
 
       let extraCost = 0;
 
-      // Combo substitutions: valid for "Combinations" or "Dinner"
+      // Combo substitutions
       if (
         (item.category === "Combinations" || /Dinner/i.test(item.name)) &&
         (comboSub === "Okra" || comboSub === "Fries")
@@ -266,23 +383,32 @@ export default function Menu({ onAddToCart }) {
         extraCost += 0.50;
       }
 
-      // Wing upsells: all flats or drums only if exactly 6 wings
+      // Wing upsells for exactly 6 wings
       if (isWing(item) && numWings === 6) {
         if (wingOpts.allFlats) extraCost += 1.00;
         if (wingOpts.allDrums) extraCost += 1.00;
       }
 
-      // Sauced: applies $1.25 for every 6 wings (e.g., 6, 12, 18...)
+      // Sauced upgrade (per set of 6 wings)
       if (isWing(item) && wingOpts.sauced && numWings >= 6) {
         const setsOf6 = Math.floor(numWings / 6);
         extraCost += setsOf6 * 1.25;
       }
 
+      // Sauce extras cost
+      extraCost += sauces.extrasPrice;
+
+      // Build final item with sauces included
       const finalItem = {
         ...item,
         substitution: comboSub || null,
         wingUpgrades: wingOpts,
-        price: parseFloat((item.price + extraCost).toFixed(2))
+        sauces: sauces.sauces,
+        extraSauceCount: sauces.extras,
+        extraSauceCharge: sauces.extrasPrice,
+        price: parseFloat((item.price + extraCost).toFixed(2)),
+        selectedOptions: selectedOptions
+       
       };
 
       onAddToCart(finalItem);
@@ -292,6 +418,8 @@ export default function Menu({ onAddToCart }) {
     Add to Cart
   </button>
 </div>
+
+
 
               
                 </div>
