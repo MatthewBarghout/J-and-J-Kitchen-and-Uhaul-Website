@@ -552,7 +552,16 @@ const menu = [
         "Tartar",
         "Mayo"
       ]
-    }
+    },
+    {
+      "id": 83,
+      "name": "Dubai Chocolate Bar",
+      "description": "",
+      "price": 12.69,
+      "category": "Desserts",
+     
+      
+    },
   ]
 ];  
 export default menu;

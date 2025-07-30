@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import rawMenu from "./menuData";
 
 
@@ -28,7 +28,8 @@ const menu = rawMenu.flat().map(item => ({
 
 
 
-export default function Menu({ onAddToCart }) {
+export default function Menu({ onAddToCart, unavailableItems = [] }) {
+
   const[drawerOpen, setDrawerOpen] = useState(false);
   // Group menu by category
   const groupedMenu = menu.reduce((acc, item) => {
@@ -41,6 +42,23 @@ export default function Menu({ onAddToCart }) {
   const [wingChoices, setWingChoices] = useState({});
   const [sauceSelections, setSauceSelections] = useState({});
   const [itemOptions, setItemOptions] = useState({});
+  const sauceChangeHandlersRef = useRef({});
+
+const getStableSauceHandler = (itemId) => {
+  if (!sauceChangeHandlersRef.current[itemId]) {
+    sauceChangeHandlersRef.current[itemId] = (selection) => {
+      setSauceSelections((prev) => ({
+        ...prev,
+        [itemId]: selection,
+      }));
+    };
+  }
+  return sauceChangeHandlersRef.current[itemId];
+};
+
+  
+
+
 
 
 
@@ -176,11 +194,13 @@ export default function Menu({ onAddToCart }) {
           <div className="space-y-4">
             {items.map((item) => {
               const numWings = getWingCount(item);
+              const isUnavailable = unavailableItems.includes(item.id);
+
 
               return (
                 <div
                   key={item.id}
-                  className="bg-gray-50 border rounded-lg p-5 shadow-sm hover:shadow-md transition"
+                  className={`bg-gray-50 border rounded-lg p-5 shadow-sm transition ${isUnavailable ? "opacity-50 pointer-events-none" : "hover:shadow-md"}`}
                 >
                   <div className="flex justify-between items-start">
                     <div>
@@ -309,16 +329,14 @@ export default function Menu({ onAddToCart }) {
 
 {/* Sauce Selector (just above Add to Cart) */}
 <div className="mt-2">
-  <SauceSelector
-    freeSauceCount={item.freeSauceCount || 0}
-    availableFlavors={item.availableFlavors || []}
-    onChange={selection =>
-      setSauceSelections(prev => ({
-        ...prev,
-        [item.id]: selection
-      }))
-    }
-  />
+<SauceSelector
+  freeSauceCount={item.freeSauceCount || 0}
+  availableFlavors={item.availableFlavors || []}
+  onChange={getStableSauceHandler(item.id)}
+/>
+
+
+  
 </div>
 {item.options && Array.isArray(item.options) && (
   <div className="mt-2">
@@ -362,6 +380,8 @@ export default function Menu({ onAddToCart }) {
 <div className="mt-4 text-right">
   <button
     onClick={() => {
+      if (isUnavailable) return;
+
       const comboSub = comboChoices[item.id];
       const wingOpts = wingChoices[item.id] || {};
       const selectedOptions = itemOptions[item.id] || [];
@@ -413,10 +433,15 @@ export default function Menu({ onAddToCart }) {
 
       onAddToCart(finalItem);
     }}
-    className="bg-green-600 text-white text-sm px-4 py-1.5 rounded-md hover:bg-green-700 transition"
-  >
-    Add to Cart
-  </button>
+    disabled={isUnavailable}
+  className={`text-sm px-4 py-1.5 rounded-md transition ${
+    isUnavailable
+      ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+      : "bg-green-600 text-white hover:bg-green-700"
+  }`}
+>
+  {isUnavailable ? "Unavailable" : "Add to Cart"}
+</button>
 </div>
 
 

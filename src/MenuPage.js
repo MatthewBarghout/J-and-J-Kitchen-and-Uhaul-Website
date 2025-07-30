@@ -2,7 +2,8 @@ import React from "react";
 import Menu from "./Menu";
 import { Link } from "react-router-dom";
 
-function MenuPage({ addToCart, totalItems, setShowCart }) {
+function MenuPage({ addToCart, totalItems, setShowCart, unavailableItems = [] }) {
+
   return (
     <div className="min-h-screen bg-gray-50 font-sans">
       <nav className="sticky top-0 bg-white border-b shadow-sm z-50 py-4 px-6 flex justify-between items-center">
@@ -23,7 +24,8 @@ function MenuPage({ addToCart, totalItems, setShowCart }) {
       </nav>
 
       <main className="max-w-7xl mx-auto p-6">
-        <Menu onAddToCart={addToCart} />
+      <Menu onAddToCart={addToCart} unavailableItems={unavailableItems} />
+
       </main>
     </div>
   );

@@ -8,7 +8,9 @@ export default function SauceSelector({ freeSauceCount, availableFlavors, onChan
     const extras = Math.max(0, selected.length - freeSauceCount);
     const extrasPrice = parseFloat((extras * 0.56).toFixed(2));
     onChange({ sauces: selected, extras, extrasPrice });
-  }, [selected, freeSauceCount, onChange]);
+  }, [selected, freeSauceCount, onChange]); // ✅ all deps included
+  
+  
 
   const toggleSauce = (flavor) => {
     setSelected((prev) =>
