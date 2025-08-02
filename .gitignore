@@ -50,3 +50,9 @@ functions/.env
 .firebaserc
 firebase.json
 
+
+# ignore SDK & deps
+/functions/google-cloud-sdk/
+/functions/node_modules/
+/node_modules/
+
