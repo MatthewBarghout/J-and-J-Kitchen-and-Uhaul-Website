@@ -1,109 +1,101 @@
 import React, { useEffect, useRef, useState } from "react";
+import { functions } from "./firebase";
+import { httpsCallable } from "firebase/functions";
 
-const SquareCheckout = ({ totalAmount, onPaymentSuccess }) => {
+export default function SquareCheckout({
+  cartItems,
+  totalAmount,
+  customerName,
+  customerPhone,
+  onPaymentSuccess,
+}) {
   const [cardAttached, setCardAttached] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
   const cardRef = useRef(null);
-  const isTokenizing = useRef(false);
+  const hasInitialized = useRef(false);
 
   useEffect(() => {
-    let cardInstance = null;
-
-    async function initSquare() {
+    let card;
+    async function init() {
+      if (hasInitialized.current) return;
+      hasInitialized.current = true;
+      const container = document.getElementById("card-container");
+      if (container) container.innerHTML = "";
       try {
-        if (!window.Square || cardAttached) return;
-
         const payments = window.Square.payments(
-          "sandbox-sq0idb-80XauowToOuFUbMK06sGDQ", // ✅ Sandbox App ID
-          "LEB9GWQ2F3" // ✅ Sandbox Location ID
+          "sandbox-sq0idb-80XauowToOuFUbMK06sGDQ", // swap to PROD App ID later
+          "production"
         );
-
-        cardInstance = await payments.card();
-
-        const alreadyAttached = document.querySelector("#card-container > div");
-        if (!alreadyAttached) {
-          await cardInstance.attach("#card-container");
-          setCardAttached(true);
-          cardRef.current = cardInstance;
-          console.log("✅ Card attached");
-        }
+        card = await payments.card();
+        await card.attach("#card-container");
+        cardRef.current = card;
+        setCardAttached(true);
       } catch (err) {
-        console.error("❌ Square attach failed:", err);
+        console.error("Square init error:", err);
+        setError("Failed to load payment form. Please refresh.");
       }
     }
-
-    initSquare();
-  }, [cardAttached]);
+    init();
+    return () => {
+      if (card) card.destroy();
+      hasInitialized.current = false;
+      const cleanup = document.getElementById("card-container");
+      if (cleanup) cleanup.innerHTML = "";
+    };
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
-    const card = cardRef.current;
-    if (!card || !cardAttached || isTokenizing.current) return;
-
+    setError("");
+    if (!customerName.trim() || !customerPhone.trim()) {
+      setError("Please enter your name and phone above.");
+      return;
+    }
+    if (!cardRef.current) {
+      setError("Payment form not ready.");
+      return;
+    }
+    setLoading(true);
     try {
-      isTokenizing.current = true;
-      setLoading(true);
-
-      const result = await card.tokenize();
-
-      if (result.status === "OK") {
-        const token = result.token;
-        console.log("✅ Tokenize result:", result);
-
-        // 🔁 Replace with actual customer name input later if desired
-        const customerName = "Test User";
-
-        const response = await fetch("https://us-central1-j-and-j-f8f66.cloudfunctions.net/chargeCard", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            token,
-            amount: totalAmount,
-            customerName,
-          }),
-        });
-
-        const data = await response.json();
-
-        if (!response.ok) throw new Error(data.error || "Payment failed");
-
-        alert("✅ Payment successful!");
-        onPaymentSuccess(data.payment);
-      } else {
-        console.error("❌ Tokenization failed:", result.errors);
-        alert("Payment error: " + (result.errors?.[0]?.message || "Unknown error"));
+      const result = await cardRef.current.tokenize();
+      if (result.status !== "OK") {
+        throw new Error(result.errors?.[0]?.message || "Card tokenization failed.");
       }
-    } catch (error) {
-      console.error("❌ chargeCard failed:", error);
-      alert("Charge failed: " + error.message);
+      const payload = {
+        sourceId:     result.token,
+        amount:       Math.round(totalAmount * 100),
+        customerName: customerName,
+        customerPhone: customerPhone,
+        items:        cartItems,
+      };
+      console.log("🔍 chargeCard payload:", payload);
+      const charge = httpsCallable(functions, "chargeCard");
+      const res = await charge(payload);
+      onPaymentSuccess(res.data.payment);
+    } catch (err) {
+      console.error("Payment failed:", err);
+      setError(err.message || "Something went wrong.");
     } finally {
-      isTokenizing.current = false;
       setLoading(false);
     }
   };
 
   return (
-    <form id="payment-form" onSubmit={handleSubmit} className="mt-4">
-      <div id="card-container" className="mb-4 border rounded-md px-3 py-2 shadow" />
+    <form onSubmit={handleSubmit} className="space-y-4 w-full max-w-md">
+      {error && <p className="text-red-600 text-sm">{error}</p>}
+      <div id="card-container" className="rounded-md border px-4 py-3 shadow-sm" />
       <button
         type="submit"
-        disabled={!cardAttached || loading}
-        className={`w-full py-2 rounded text-white font-medium ${
-          cardAttached && !loading
-            ? "bg-green-600 hover:bg-green-700"
-            : "bg-gray-400 cursor-not-allowed"
+        disabled={!cardAttached || loading || cartItems.length === 0}
+        className={`w-full py-3 text-white font-semibold rounded-md ${
+          !cardAttached || loading || cartItems.length === 0
+            ? "bg-gray-400 cursor-not-allowed"
+            : "bg-green-600 hover:bg-green-700"
         }`}
       >
-        {loading
-          ? "Processing..."
-          : cardAttached
-          ? `Pay $${totalAmount?.toFixed(2)}`
-          : "Loading card..."}
+        {loading ? "Processing…" : `Pay $${totalAmount.toFixed(2)}`}
       </button>
     </form>
   );
-};
-
-export default SquareCheckout;
-
+}

@@ -1,2 +1,23 @@
+# dependencies
+/functions/node_modules/
+
+# TypeScript build output (if you transpile)
+/functions/lib/
+/functions/build/
+
+# Local env vars
+/functions/.env
+/functions/.env.local
+
+# Firebase logs
+/functions/firebase-debug.log
+
+# IDE folders
+/functions/.vscode/
+/functions/.idea/
+
+# Mac system files
+/functions/._*
+
 node_modules/
-*.local
+.env

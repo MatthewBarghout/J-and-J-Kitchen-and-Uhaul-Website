@@ -1,5 +1,7 @@
+// src/AdminPanel.js
+
 import React, { useEffect, useState } from "react";
-import { db } from "./firebase";
+import { db, functions } from "./firebase";
 import {
   collection,
   onSnapshot,
@@ -7,26 +9,30 @@ import {
   updateDoc,
   setDoc,
 } from "firebase/firestore";
-import menu from "./menuData"; // your existing menu import
+import { httpsCallable } from "firebase/functions";
+import menu from "./menuData";
 
-function AdminPanel() {
+const sendText = httpsCallable(functions, "sendText");
+
+export default function AdminPanel() {
   const [orders, setOrders] = useState([]);
   const [prepTimes, setPrepTimes] = useState({});
   const [orderPaused, setOrderPaused] = useState(false);
   const [unavailableItems, setUnavailableItems] = useState([]);
   const [expandedCategory, setExpandedCategory] = useState(null);
 
+  // subscribe to orders
   useEffect(() => {
-    const unsub = onSnapshot(collection(db, "orders"), (snapshot) => {
-      const data = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
-      setOrders(data);
+    const unsub = onSnapshot(collection(db, "orders"), (snap) => {
+      setOrders(snap.docs.map(d => ({ id: d.id, ...d.data() })));
     });
     return () => unsub();
   }, []);
 
+  // subscribe to admin/settings
   useEffect(() => {
-    const pauseRef = doc(db, "admin", "settings");
-    const unsub = onSnapshot(pauseRef, (snap) => {
+    const ref = doc(db, "admin", "settings");
+    const unsub = onSnapshot(ref, (snap) => {
       if (snap.exists()) {
         setOrderPaused(snap.data().paused || false);
         setUnavailableItems(snap.data().unavailable || []);
@@ -35,32 +41,57 @@ function AdminPanel() {
     return () => unsub();
   }, []);
 
-  const handleMarkReady = async (id) => {
-    await updateDoc(doc(db, "orders", id), { ready: true });
+  const handleMarkReady = async (orderId) => {
+    // mark ready in Firestore
+    await updateDoc(doc(db, "orders", orderId), { ready: true });
+
+    // send SMS
+    const order = orders.find(o => o.id === orderId);
+    if (order?.customerPhone) {
+      try {
+        await sendText({
+          to: order.customerPhone,
+          message: "Your order is ready for pickup."
+        });
+      } catch (err) {
+        console.error("SMS send error:", err);
+      }
+    }
   };
 
-  const handlePrepTimeChange = async (id, value) => {
-    setPrepTimes((prev) => ({ ...prev, [id]: value }));
-    await updateDoc(doc(db, "orders", id), { prepTime: value });
+  const handlePrepTimeChange = async (orderId, value) => {
+    setPrepTimes(prev => ({ ...prev, [orderId]: value }));
+    await updateDoc(doc(db, "orders", orderId), { prepTime: value });
+
+    const order = orders.find(o => o.id === orderId);
+    if (order?.customerPhone) {
+      try {
+        await sendText({
+          to: order.customerPhone,
+          message: `Your order will be ready in ${value}.`
+        });
+      } catch (err) {
+        console.error("SMS send error:", err);
+      }
+    }
   };
 
   const togglePauseOrders = async () => {
-    const settingsRef = doc(db, "admin", "settings");
-    await setDoc(settingsRef, { paused: !orderPaused }, { merge: true });
+    const ref = doc(db, "admin", "settings");
+    await setDoc(ref, { paused: !orderPaused }, { merge: true });
   };
 
   const toggleUnavailable = async (itemId) => {
-    const newList = unavailableItems.includes(itemId)
-      ? unavailableItems.filter((id) => id !== itemId)
+    const next = unavailableItems.includes(itemId)
+      ? unavailableItems.filter(id => id !== itemId)
       : [...unavailableItems, itemId];
-    setUnavailableItems(newList);
-    await setDoc(doc(db, "admin", "settings"), { unavailable: newList }, { merge: true });
+    setUnavailableItems(next);
+    await setDoc(doc(db, "admin", "settings"), { unavailable: next }, { merge: true });
   };
 
-  // Group menu by category
+  // group menu items by category
   const groupedMenu = menu[0].reduce((acc, item) => {
-    if (!acc[item.category]) acc[item.category] = [];
-    acc[item.category].push(item);
+    (acc[item.category] = acc[item.category] || []).push(item);
     return acc;
   }, {});
 
@@ -76,19 +107,18 @@ function AdminPanel() {
       </button>
 
       <h2 className="text-xl font-semibold mb-2">Mark Items Unavailable</h2>
-
-      {Object.entries(groupedMenu).map(([category, items]) => (
-        <div key={category} className="mb-4 border rounded">
+      {Object.entries(groupedMenu).map(([cat, items]) => (
+        <div key={cat} className="mb-4 border rounded">
           <button
-            onClick={() => setExpandedCategory(expandedCategory === category ? null : category)}
+            onClick={() => setExpandedCategory(expandedCategory === cat ? null : cat)}
             className="w-full text-left px-4 py-2 bg-gray-100 font-semibold"
           >
-            {category}
+            {cat}
           </button>
-          {expandedCategory === category && (
+          {expandedCategory === cat && (
             <div className="p-3 space-y-2">
-              {items.map((item) => (
-                <div key={item.id} className="flex items-center justify-between text-sm">
+              {items.map(item => (
+                <div key={item.id} className="flex justify-between items-center text-sm">
                   <span>{item.name}</span>
                   <input
                     type="checkbox"
@@ -104,10 +134,13 @@ function AdminPanel() {
 
       <h2 className="text-xl font-semibold mt-8 mb-2">Live Orders</h2>
       <div className="space-y-4">
-        {orders.filter((o) => !o.ready).map((order) => (
+        {orders.filter(o => !o.ready).map(order => (
           <div key={order.id} className="border rounded p-4 shadow">
             <div className="flex justify-between mb-2">
-              <h2 className="font-semibold">Order for {order.name}</h2>
+              <div>
+                <h2 className="font-semibold">Order for {order.customerName}</h2>
+                <p className="text-sm text-gray-600">Payment ID: {order.paymentId}</p>
+              </div>
               <button
                 onClick={() => handleMarkReady(order.id)}
                 className="bg-blue-600 text-white px-3 py-1 rounded"
@@ -116,10 +149,12 @@ function AdminPanel() {
               </button>
             </div>
 
-            {order.items.map((item, index) => (
-              <div key={index} className="ml-4 mb-1">
-                <p className="font-medium">{item.name} × {item.quantity}</p>
-                {item.substitution && <p className="text-sm">Sub: {item.substitution}</p>}
+            {order.items.map((item, i) => (
+              <div key={i} className="ml-4 mb-1">
+                <p className="font-medium">
+                  {item.quantity}× {item.name} @ ${item.price.toFixed(2)}
+                </p>
+                {item.substitution && <p className="text-sm">Substitution: {item.substitution}</p>}
                 {item.wingUpgrades?.sauced && (
                   <p className="text-sm">Sauced in: {item.wingUpgrades.saucedFlavor}</p>
                 )}
@@ -136,7 +171,7 @@ function AdminPanel() {
               <label className="text-sm font-medium">Prep Time:</label>
               <select
                 value={prepTimes[order.id] || ""}
-                onChange={(e) => handlePrepTimeChange(order.id, e.target.value)}
+                onChange={e => handlePrepTimeChange(order.id, e.target.value)}
                 className="ml-2 border rounded px-2 py-1 text-sm"
               >
                 <option value="">Select</option>
@@ -149,7 +184,7 @@ function AdminPanel() {
             </div>
 
             <p className="mt-2 text-gray-600 text-sm">
-              Total: ${order.total?.toFixed(2)}
+              Total: ${(order.amount / 100).toFixed(2)}
             </p>
           </div>
         ))}
@@ -157,6 +192,3 @@ function AdminPanel() {
     </div>
   );
 }
-
-export default AdminPanel;
-
