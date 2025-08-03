@@ -4,10 +4,14 @@ import React, { useState, useEffect } from "react";
 import { doc, onSnapshot } from "firebase/firestore";
 import { db } from "./firebase";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { AuthProvider } from "./AuthContext";
 import AdminPanel from "./AdminPanel";
 import HomePage from "./Homepage";
 import MenuPage from "./MenuPage";
 import SquareCheckout from "./SquareCheckout";
+import Login from "./Login";
+import Signup from "./Signup";
+import ProtectedRoute from "./ProtectedRoute";
 
 export default function App() {
   // ─── State Hooks ─────────────────────────────────────────────
@@ -159,31 +163,41 @@ export default function App() {
 
   // ─── Render ───────────────────────────────────────────────────
   return (
-    <Router>
-      {ordersPaused && (
-        <div className="bg-yellow-200 text-yellow-800 text-center py-3 font-medium">
-          🚫 We are currently not accepting orders. Please check back soon.
-        </div>
-      )}
+    <AuthProvider>
+      <Router>
+        {ordersPaused && (
+          <div className="bg-yellow-200 text-yellow-800 text-center py-3 font-medium">
+            🚫 We are currently not accepting orders. Please check back soon.
+          </div>
+        )}
 
-      <Routes>
-        <Route
-          path="/"
-          element={<HomePage totalItems={totalItems} setShowCart={setShowCart} />}
-        />
-        <Route
-          path="/menu"
-          element={
-            <MenuPage
-              addToCart={addToCart}
-              totalItems={totalItems}
-              setShowCart={setShowCart}
-              unavailableItems={unavailableItems}
-            />
-          }
-        />
-        <Route path="/admin" element={<AdminPanel />} />
-      </Routes>
+        <Routes>
+          <Route
+            path="/"
+            element={<HomePage totalItems={totalItems} setShowCart={setShowCart} />}
+          />
+          <Route
+            path="/menu"
+            element={
+              <MenuPage
+                addToCart={addToCart}
+                totalItems={totalItems}
+                setShowCart={setShowCart}
+                unavailableItems={unavailableItems}
+              />
+            }
+          />
+          <Route path="/login" element={<Login />} />
+          <Route path="/signup" element={<Signup />} />
+          <Route 
+            path="/admin" 
+            element={
+              <ProtectedRoute>
+                <AdminPanel />
+              </ProtectedRoute>
+            } 
+          />
+        </Routes>
 
       {showCart && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
@@ -307,6 +321,7 @@ export default function App() {
           </div>
         </div>
       )}
-    </Router>
+      </Router>
+    </AuthProvider>
   );
 }

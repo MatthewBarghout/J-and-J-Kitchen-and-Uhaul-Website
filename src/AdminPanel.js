@@ -10,11 +10,13 @@ import {
   setDoc,
 } from "firebase/firestore";
 import { httpsCallable } from "firebase/functions";
+import { useAuth } from "./AuthContext";
 import menu from "./menuData";
 
 const sendText = httpsCallable(functions, "sendText");
 
 export default function AdminPanel() {
+  const { currentUser, logout } = useAuth();
   const [orders, setOrders] = useState([]);
   const [prepTimes, setPrepTimes] = useState({});
   const [orderPaused, setOrderPaused] = useState(false);
@@ -97,7 +99,18 @@ export default function AdminPanel() {
 
   return (
     <div className="p-6 max-w-5xl mx-auto">
-      <h1 className="text-2xl font-bold mb-4">Admin Panel</h1>
+      <div className="flex justify-between items-center mb-4">
+        <h1 className="text-2xl font-bold">Admin Panel</h1>
+        <div className="flex items-center space-x-4">
+          <span className="text-sm text-gray-600">Logged in as: {currentUser?.email}</span>
+          <button
+            onClick={logout}
+            className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+          >
+            Logout
+          </button>
+        </div>
+      </div>
 
       <button
         onClick={togglePauseOrders}
