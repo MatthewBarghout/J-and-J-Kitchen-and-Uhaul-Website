@@ -48,6 +48,8 @@ functions/.env
 
 # Firebase artifacts
 .firebaserc
+firebase-debug.log
+firebase-debug.*.log
 
 
 # ignore SDK & large files
