@@ -87,3 +87,66 @@ exports.sendPrepTimeText = onCall({
     throw new HttpsError("internal","SMS failed");
   }
 });
+
+// ─── SQUARE REFUND FUNCTION ───────────────────────────────────
+exports.refundPayment = onCall({ 
+  region: "us-central1",
+  secrets: ["SQUARE_ACCESS_TOKEN"]
+}, async (req) => {
+  logger.info("refundPayment called with:", req.data);
+  const { paymentId, orderId, reason } = req.data || {};
+  
+  if (!paymentId || !orderId) {
+    throw new HttpsError("invalid-argument", "Payment ID and Order ID are required");
+  }
+  
+  const squareToken = process.env.SQUARE_ACCESS_TOKEN;
+  if (!squareToken) {
+    throw new HttpsError("internal", "Square access token not configured");
+  }
+  
+  const squareClient = new Client({
+    accessToken: squareToken,
+    environment: Environment.Production,
+  });
+  
+  try {
+    // Get the original payment details
+    const { paymentsApi } = squareClient;
+    const { result: paymentResult } = await paymentsApi.getPayment(paymentId);
+    const payment = paymentResult.payment;
+    
+    // Create the refund
+    const { refundsApi } = squareClient;
+    const { result } = await refundsApi.refundPayment({
+      sourceId: paymentId,
+      idempotencyKey: crypto.randomUUID(),
+      amountMoney: {
+        amount: payment.amountMoney.amount,
+        currency: payment.amountMoney.currency
+      },
+      reason: reason || "Order cancelled by restaurant"
+    });
+    
+    const refund = result.refund;
+    
+    // Update order in Firestore to mark as refunded
+    await db.collection("orders").doc(orderId).update({
+      refunded: true,
+      refundId: refund.id,
+      refundedAt: admin.firestore.FieldValue.serverTimestamp(),
+      refundReason: reason || "Order cancelled by restaurant"
+    });
+    
+    logger.info("Refund successful:", refund.id);
+    return { 
+      success: true, 
+      refundId: refund.id,
+      status: refund.status,
+      amount: refund.amountMoney.amount
+    };
+  } catch(err) {
+    logger.error("Refund error:", err);
+    throw new HttpsError("internal", `Refund failed: ${err.message}`);
+  }
+});

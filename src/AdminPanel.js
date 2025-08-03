@@ -14,6 +14,7 @@ import { useAuth } from "./AuthContext";
 import menu from "./menuData";
 
 const sendText = httpsCallable(functions, "sendText");
+const refundPayment = httpsCallable(functions, "refundPayment");
 
 export default function AdminPanel() {
   const { currentUser, logout } = useAuth();
@@ -22,6 +23,7 @@ export default function AdminPanel() {
   const [orderPaused, setOrderPaused] = useState(false);
   const [unavailableItems, setUnavailableItems] = useState([]);
   const [expandedCategory, setExpandedCategory] = useState(null);
+  const [refundingOrders, setRefundingOrders] = useState(new Set());
 
   // subscribe to orders
   useEffect(() => {
@@ -91,6 +93,37 @@ export default function AdminPanel() {
     await setDoc(doc(db, "admin", "settings"), { unavailable: next }, { merge: true });
   };
 
+  const handleCancelOrder = async (order) => {
+    const confirmCancel = window.confirm(
+      `Cancel order for ${order.customerName}?\n\nThis will issue a full refund of $${(order.amount / 100).toFixed(2)} to their payment method.`
+    );
+    
+    if (!confirmCancel) return;
+    
+    try {
+      setRefundingOrders(prev => new Set([...prev, order.id]));
+      
+      const result = await refundPayment({
+        paymentId: order.paymentId,
+        orderId: order.id,
+        reason: "Order cancelled by restaurant"
+      });
+      
+      if (result.data.success) {
+        alert(`Order cancelled successfully!\nRefund ID: ${result.data.refundId}\nAmount: $${(result.data.amount / 100).toFixed(2)}`);
+      }
+    } catch (error) {
+      console.error("Refund error:", error);
+      alert(`Failed to cancel order: ${error.message}`);
+    } finally {
+      setRefundingOrders(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(order.id);
+        return newSet;
+      });
+    }
+  };
+
   // group menu items by category
   const groupedMenu = menu[0].reduce((acc, item) => {
     (acc[item.category] = acc[item.category] || []).push(item);
@@ -153,13 +186,28 @@ export default function AdminPanel() {
               <div>
                 <h2 className="font-semibold">Order for {order.customerName}</h2>
                 <p className="text-sm text-gray-600">Payment ID: {order.paymentId}</p>
+                {order.refunded && (
+                  <p className="text-sm text-red-600 font-semibold">REFUNDED</p>
+                )}
               </div>
-              <button
-                onClick={() => handleMarkReady(order.id)}
-                className="bg-blue-600 text-white px-3 py-1 rounded"
-              >
-                Mark Ready
-              </button>
+              <div className="flex space-x-2">
+                <button
+                  onClick={() => handleMarkReady(order.id)}
+                  className="bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700"
+                  disabled={order.refunded}
+                >
+                  Mark Ready
+                </button>
+                {!order.refunded && (
+                  <button
+                    onClick={() => handleCancelOrder(order)}
+                    className="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700 disabled:opacity-50"
+                    disabled={refundingOrders.has(order.id)}
+                  >
+                    {refundingOrders.has(order.id) ? "Cancelling..." : "Cancel Order"}
+                  </button>
+                )}
+              </div>
             </div>
 
             {order.items.map((item, i) => (
