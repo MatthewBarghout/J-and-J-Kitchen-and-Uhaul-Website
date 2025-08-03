@@ -2,10 +2,10 @@
 
 A modern, full-stack restaurant ordering website built with React and Firebase, featuring real-time order management, secure payment processing, and SMS notifications.
 
-## 🌐 Live Website
+## Live Website
 **Visit:** https://j-and-j-f8f66.web.app
 
-## ✨ Features
+## Features
 
 ### Customer Experience
 - **Browse Menu** - View all available items with descriptions and prices
@@ -20,7 +20,7 @@ A modern, full-stack restaurant ordering website built with React and Firebase, 
 - **SMS Notifications** - Send prep time updates to customers via Twilio
 - **Menu Control** - Pause orders and mark items unavailable
 
-## 🛠️ Technology Stack
+## Technology Stack
 
 ### Frontend
 - **React 19** - Modern UI framework
@@ -45,7 +45,7 @@ A modern, full-stack restaurant ordering website built with React and Firebase, 
 - **Environment Variables** - No hardcoded credentials
 - **HTTPS Everywhere** - End-to-end encryption
 
-## 🏗️ Architecture
+## Architecture
 
 ```
 Frontend (React)          Backend (Firebase)
@@ -59,7 +59,7 @@ Frontend (React)          Backend (Firebase)
 │   └── SMS Control       └── Security Rules
 ```
 
-## 📱 User Flow
+## User Flow
 
 ### Customer Journey
 1. Visit website → Browse menu
@@ -74,7 +74,7 @@ Frontend (React)          Backend (Firebase)
 4. Send SMS notifications
 5. Mark orders complete
 
-## 🔧 Local Development
+## Local Development
 
 ### Prerequisites
 - Node.js 18+
@@ -111,7 +111,7 @@ firebase use j-and-j-f8f66
 firebase emulators:start
 ```
 
-## 🚀 Deployment
+## Deployment
 
 The website automatically deploys when changes are pushed to the main branch via GitHub Actions.
 
@@ -127,7 +127,7 @@ firebase deploy --only functions
 firebase deploy --only firestore:rules
 ```
 
-## 🔐 Environment Variables
+## Environment Variables
 
 ### Required Secrets (Firebase Secret Manager)
 - `SQUARE_ACCESS_TOKEN` - Square production API key
@@ -145,7 +145,7 @@ REACT_APP_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
 REACT_APP_FIREBASE_APP_ID=your_app_id
 ```
 
-## 📊 Project Structure
+## Project Structure
 
 ```
 ├── src/
@@ -167,7 +167,7 @@ REACT_APP_FIREBASE_APP_ID=your_app_id
 └── firebase.json            # Firebase configuration
 ```
 
-## 🎯 Key Features Explained
+## Key Features Explained
 
 ### Real-time Order Management
 Orders appear instantly in the admin panel using Firestore real-time listeners. No page refresh needed.
@@ -184,7 +184,7 @@ Works perfectly on desktop, tablet, and mobile devices with Tailwind CSS.
 ### Admin Authentication
 Firebase Authentication secures the admin panel with email/password login.
 
-## 📈 Performance
+## Performance
 
 - **Lighthouse Score:** 95+ performance
 - **Global CDN:** Firebase Hosting worldwide
@@ -192,7 +192,7 @@ Firebase Authentication secures the admin panel with email/password login.
 - **Real-time Updates:** Instant order notifications
 - **Optimized Build:** Code splitting and minification
 
-## 🔒 Security Features
+## Security Features
 
 - HTTPS everywhere with Firebase hosting
 - Firestore security rules prevent unauthorized access
@@ -201,14 +201,14 @@ Firebase Authentication secures the admin panel with email/password login.
 - No sensitive data in source code
 - Protected routes and private functions
 
-## 📝 License
+## License
 
 Private project - All rights reserved
 
-## 🤝 Support
+## Support
 
 For technical support or questions about this restaurant ordering system, please contact the development team.
 
 ---
 
-**Built with ❤️ for J and J Kitchen**
+**Built for J and J Kitchen**
