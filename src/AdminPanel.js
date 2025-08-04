@@ -24,14 +24,69 @@ export default function AdminPanel() {
   const [unavailableItems, setUnavailableItems] = useState([]);
   const [expandedCategory, setExpandedCategory] = useState(null);
   const [refundingOrders, setRefundingOrders] = useState(new Set());
+  const [previousOrderCount, setPreviousOrderCount] = useState(0);
+  const [notificationsEnabled, setNotificationsEnabled] = useState(false);
+
+  // Request notification permission
+  useEffect(() => {
+    if ('Notification' in window && Notification.permission === 'default') {
+      Notification.requestPermission().then(permission => {
+        setNotificationsEnabled(permission === 'granted');
+      });
+    } else if (Notification.permission === 'granted') {
+      setNotificationsEnabled(true);
+    }
+  }, []);
+
+  // Notification functions  
+  const playNotificationSound = () => {
+    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    const oscillator = audioContext.createOscillator();
+    const gainNode = audioContext.createGain();
+    
+    oscillator.connect(gainNode);
+    gainNode.connect(audioContext.destination);
+    
+    oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
+    oscillator.frequency.setValueAtTime(1000, audioContext.currentTime + 0.1);
+    oscillator.frequency.setValueAtTime(800, audioContext.currentTime + 0.2);
+    
+    gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+    
+    oscillator.start(audioContext.currentTime);
+    oscillator.stop(audioContext.currentTime + 0.3);
+  };
+
+  const showNotification = (title, body) => {
+    if (notificationsEnabled && 'Notification' in window) {
+      new Notification(title, {
+        body,
+        icon: '/logo192.png',
+        badge: '/logo192.png',
+        tag: 'new-order',
+        requireInteraction: true
+      });
+    }
+  };
 
   // subscribe to orders
   useEffect(() => {
     const unsub = onSnapshot(collection(db, "orders"), (snap) => {
-      setOrders(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+      const newOrders = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      const activeOrders = newOrders.filter(o => !o.ready && !o.refunded);
+      
+      // Check for new orders and trigger notification
+      if (previousOrderCount > 0 && activeOrders.length > previousOrderCount && notificationsEnabled) {
+        playNotificationSound();
+        showNotification('New Order Received!', 'A new order has come in.');
+      }
+      
+      setOrders(newOrders);
+      setPreviousOrderCount(activeOrders.length);
     });
     return () => unsub();
-  }, []);
+  }, [previousOrderCount, notificationsEnabled]);
 
   // subscribe to admin/settings
   useEffect(() => {
@@ -124,6 +179,79 @@ export default function AdminPanel() {
     }
   };
 
+  const printOrder = (order) => {
+    const printContent = `
+      <div style="font-family: monospace; width: 300px; margin: 0 auto;">
+        <div style="text-align: center; border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 10px;">
+          <h2 style="margin: 0;">J & J KITCHEN</h2>
+          <p style="margin: 0;">ORDER RECEIPT</p>
+        </div>
+        
+        <div style="margin-bottom: 15px;">
+          <strong>Order ID:</strong> ${order.id}<br>
+          <strong>Customer:</strong> ${order.customerName}<br>
+          <strong>Date:</strong> ${new Date(order.createdAt?.toDate?.() || order.timestamp || Date.now()).toLocaleString()}<br>
+          ${order.customerPhone ? `<strong>Phone:</strong> ${order.customerPhone}<br>` : ''}
+        </div>
+        
+        <div style="border-top: 1px solid #000; border-bottom: 1px solid #000; padding: 10px 0;">
+          <strong>ITEMS ORDERED:</strong><br><br>
+          ${order.items.map(item => `
+            <div style="margin-bottom: 8px;">
+              <strong>${item.quantity}x ${item.name}</strong><br>
+              ${item.substitution ? `&nbsp;&nbsp;Sub: ${item.substitution}<br>` : ''}
+              ${item.wingUpgrades?.sauced ? `&nbsp;&nbsp;Sauced: ${item.wingUpgrades.saucedFlavor}<br>` : ''}
+              ${item.selectedOptions?.length > 0 ? `&nbsp;&nbsp;Options: ${item.selectedOptions.join(', ')}<br>` : ''}
+              ${item.sauces?.length > 0 ? `&nbsp;&nbsp;Sauces: ${item.sauces.join(', ')}<br>` : ''}
+              &nbsp;&nbsp;$${item.price.toFixed(2)}<br>
+            </div>
+          `).join('')}
+        </div>
+        
+        <div style="margin-top: 15px; text-align: right;">
+          <strong>TOTAL: $${(order.amount / 100).toFixed(2)}</strong>
+        </div>
+        
+        ${order.prepTime ? `
+          <div style="margin-top: 15px; text-align: center; border: 1px solid #000; padding: 5px;">
+            <strong>PREP TIME: ${order.prepTime}</strong>
+          </div>
+        ` : ''}
+        
+        <div style="margin-top: 20px; text-align: center; font-size: 12px;">
+          <p>Thank you for your business!</p>
+          <p>2022 S Broad St, Winston-Salem, NC 27127</p>
+          <p>(336) 283-9609</p>
+        </div>
+      </div>
+    `;
+
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>Order ${order.id}</title>
+          <style>
+            @media print {
+              body { margin: 0; }
+              @page { margin: 0.5in; }
+            }
+          </style>
+        </head>
+        <body>
+          ${printContent}
+          <script>
+            window.onload = function() {
+              window.print();
+              window.close();
+            }
+          </script>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+  };
+
   // group menu items by category
   const groupedMenu = menu[0].reduce((acc, item) => {
     (acc[item.category] = acc[item.category] || []).push(item);
@@ -135,6 +263,27 @@ export default function AdminPanel() {
       <div className="flex justify-between items-center mb-4">
         <h1 className="text-2xl font-bold">Admin Panel</h1>
         <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-2">
+            <span className="text-sm text-gray-600">Notifications:</span>
+            <button
+              onClick={() => {
+                if (notificationsEnabled) {
+                  setNotificationsEnabled(false);
+                } else {
+                  Notification.requestPermission().then(permission => {
+                    setNotificationsEnabled(permission === 'granted');
+                  });
+                }
+              }}
+              className={`px-3 py-1 rounded text-sm ${
+                notificationsEnabled 
+                  ? 'bg-green-600 text-white hover:bg-green-700' 
+                  : 'bg-gray-600 text-white hover:bg-gray-700'
+              }`}
+            >
+              {notificationsEnabled ? '🔔 ON' : '🔕 OFF'}
+            </button>
+          </div>
           <span className="text-sm text-gray-600">Logged in as: {currentUser?.email}</span>
           <button
             onClick={logout}
@@ -191,6 +340,13 @@ export default function AdminPanel() {
                 )}
               </div>
               <div className="flex space-x-2">
+                <button
+                  onClick={() => printOrder(order)}
+                  className="bg-gray-600 text-white px-3 py-1 rounded hover:bg-gray-700 text-sm"
+                  title="Print Order"
+                >
+                  🖨️ Print
+                </button>
                 <button
                   onClick={() => handleMarkReady(order.id)}
                   className="bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700"
