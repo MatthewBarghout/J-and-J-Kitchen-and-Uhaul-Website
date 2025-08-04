@@ -108,18 +108,22 @@ export default function Menu({ onAddToCart, unavailableItems = [] }) {
       )}
 
       {/* Category Nav */}
-      <div className="sticky top-0 z-10 bg-white py-2 shadow-sm border-b flex items-center">
-        <div id="category-scroll" className="overflow-x-auto flex space-x-2 sm:space-x-4 px-2 sm:px-4 scrollbar-thin">
-          {Object.keys(groupedMenu).map(category => (
-            <button
-              key={category}
-              onClick={() => document.getElementById(category)?.scrollIntoView({ behavior: 'smooth' })}
-              className="text-xs sm:text-sm font-medium text-gray-700 hover:text-green-700 px-2 py-1 whitespace-nowrap"
-            >
-              {category}
-            </button>
-          ))}
+      <div className="sticky top-0 z-10 bg-white py-2 shadow-sm border-b relative">
+        <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
+          <div className="flex space-x-2 sm:space-x-4 px-2 sm:px-4 min-w-max pb-1">
+            {Object.keys(groupedMenu).map(category => (
+              <button
+                key={category}
+                onClick={() => document.getElementById(category)?.scrollIntoView({ behavior: 'smooth' })}
+                className="text-xs sm:text-sm font-medium text-gray-700 hover:text-green-700 bg-gray-50 hover:bg-green-50 px-3 py-2 rounded-full whitespace-nowrap flex-shrink-0 border border-gray-200 transition-colors"
+              >
+                {category}
+              </button>
+            ))}
+          </div>
         </div>
+        {/* Scroll indicator hint for mobile */}
+        <div className="absolute right-0 top-2 bottom-2 w-6 bg-gradient-to-l from-white via-white/80 to-transparent pointer-events-none sm:hidden"></div>
       </div>
 
       {/* Menu Items */}
