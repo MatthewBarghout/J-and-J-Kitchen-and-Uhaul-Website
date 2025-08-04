@@ -559,8 +559,7 @@ const menu = [
       "description": "",
       "price": 12.69,
       "category": "Desserts",
-     
-      
+      "freeSauceCount": 0
     },
   ]
 ];  

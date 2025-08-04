@@ -20,7 +20,7 @@ function HomePage() {
             and warm hospitality right here in the heart of the community.
           </p>
           <p className="text-sm text-gray-500 italic mb-6 sm:mb-8">
-            Open 11:00 AM – 6:00 PM 
+            Open 11:30 AM – 6:00 PM 
           </p>
           <Link
             to="/menu"

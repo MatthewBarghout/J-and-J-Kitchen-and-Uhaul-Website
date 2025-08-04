@@ -69,7 +69,7 @@ export default function Menu({ onAddToCart, unavailableItems = [] }) {
           <span className="block sm:hidden">Menu</span>
         </button>
         <div className="flex items-center gap-1 text-xs sm:text-sm text-gray-600">
-          🕒 <span className="hidden sm:inline">11:00 am – 6:10 pm</span><span className="sm:hidden">11-6pm</span>
+          🕒 <span className="hidden sm:inline">11:30 am – 6:00 pm</span><span className="sm:hidden">11:30-6pm</span>
         </div>
       </div>
 
