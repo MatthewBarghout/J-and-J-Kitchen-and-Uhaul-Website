@@ -30,43 +30,43 @@ export default function OrderForm({ cart, onOrderComplete }) {
 
   if (submitted) {
     return (
-      <div className="mt-6 p-4 bg-green-50 border border-greeen-300 rounded">
-
+      <div className="mt-4 sm:mt-6 p-4 bg-green-50 border border-green-300 rounded-lg">
         <h3 className="text-green-800 font-semibold mb-2">
           Thank you! Your order has been received.
-          </h3>
-        <button onClick={() => setSubmitted(false)}
-          className= "text-sm underline hover: text-blue-800"
-          >
-            Place another order
-          </button>
+        </h3>
+        <button 
+          onClick={() => setSubmitted(false)}
+          className="text-sm underline hover:text-blue-800 transition-colors"
+        >
+          Place another order
+        </button>
       </div>
     );
   }
   
 
   return (
-    <form onSubmit={handleSubmit} className= "mt-6 space-y-4">
-      <h2 className="text-xl font-semibold text-gray-800">Complete Your Order</h2>
+    <form onSubmit={handleSubmit} className="mt-4 sm:mt-6 space-y-4">
+      <h2 className="text-lg sm:text-xl font-semibold text-gray-800">Complete Your Order</h2>
       <div>
-      <label className="block text-sm font-medium text-gray-700 mb-1">
-
-        Name: 
+        <label className="block text-sm font-medium text-gray-700 mb-1">
+          Name:
         </label>
         <input
           type="text"
           value={name}
           onChange={(e) => setName(e.target.value)}
           required
-          clasName="w-full border-gray-300 rounded px-3 py-2 shadow-sm focus: outline-none focus:ring focus:border-blue-300"
+          className="w-full border border-gray-300 rounded-lg px-3 py-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-300 focus:border-blue-300"
         />
-        </div>
-    
+      </div>
       
       <button
-       type="submit"
-      className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition">
-      Submit Order
-       </button>
+        type="submit"
+        className="w-full sm:w-auto bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors font-medium"
+      >
+        Submit Order
+      </button>
     </form>
-  )};
+  );
+};
