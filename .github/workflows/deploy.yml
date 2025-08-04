@@ -7,11 +7,13 @@ on:
     branches: [ main ]
 
 jobs:
-  test:
+  validate:
+    name: Validate & Test
     runs-on: ubuntu-latest
     
     steps:
-    - uses: actions/checkout@v4
+    - name: Checkout code
+      uses: actions/checkout@v4
     
     - name: Setup Node.js
       uses: actions/setup-node@v4
@@ -22,28 +24,33 @@ jobs:
     - name: Install dependencies
       run: npm ci
     
-    - name: Security & Build Validation
+    - name: Run tests
+      run: npm test -- --watchAll=false --passWithNoTests --coverage=false
+      env:
+        CI: true
+    
+    - name: Security audit
+      run: npm audit --audit-level high --production || echo "Security audit completed with warnings"
+    
+    - name: Build frontend
+      run: npm run build
+    
+    - name: Validate functions
       run: |
-        echo "🔒 Security Check: Validating build integrity..."
-        npm run build
-        echo "✅ Build completed successfully - no syntax errors"
-        echo "🔍 Security Check: Scanning for common vulnerabilities..."
-        npm audit --audit-level moderate || echo "⚠️ Audit warnings noted but build continues"
-        echo "✅ Security validation completed"
-    
-    - name: Install functions dependencies
-      run: cd functions && npm ci
-    
-    - name: Lint functions
-      run: cd functions && npm run lint
+        cd functions
+        npm ci
+        npm run lint
+        echo "Functions validation completed"
 
   deploy:
-    needs: test
+    name: Deploy to Production
+    needs: validate
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     
     steps:
-    - uses: actions/checkout@v4
+    - name: Checkout code
+      uses: actions/checkout@v4
     
     - name: Setup Node.js
       uses: actions/setup-node@v4
@@ -54,16 +61,19 @@ jobs:
     - name: Install dependencies
       run: npm ci
     
-    - name: Build project
+    - name: Build production app
       run: npm run build
     
     - name: Install functions dependencies
       run: cd functions && npm ci
     
     - name: Setup Firebase CLI
-      run: npm install -g firebase-tools
+      run: npm install -g firebase-tools@latest
     
     - name: Deploy to Firebase
-      run: firebase deploy --token "${{ secrets.FIREBASE_TOKEN }}"
+      run: firebase deploy --token "${{ secrets.FIREBASE_TOKEN }}" --non-interactive
       env:
         FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
+    
+    - name: Deployment success notification
+      run: echo "✅ Deployment completed successfully to https://j-and-j-f8f66.web.app"
