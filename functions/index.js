@@ -58,7 +58,7 @@ exports.chargeCard = onCall({
 
   const squareClient = new Client({
     accessToken: squareToken,
-    environment: Environment.Production,
+    environment: Environment.Sandbox,
   });
 
   try {
@@ -230,7 +230,7 @@ exports.refundPayment = onCall({
 
   const squareClient = new Client({
     accessToken: squareToken,
-    environment: Environment.Production,
+    environment: Environment.Sandbox,
   });
 
   try {
