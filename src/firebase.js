@@ -1,7 +1,7 @@
 import { initializeApp } from "firebase/app";
 import { getFirestore } from "firebase/firestore";
 import { getFunctions } from "firebase/functions";
-import { getAuth } from "firebase/auth";
+import { getAuth, setPersistence, browserLocalPersistence } from "firebase/auth";
 
 const firebaseConfig = {
   apiKey: process.env.REACT_APP_FIREBASE_API_KEY,
@@ -19,5 +19,10 @@ const app = initializeApp(firebaseConfig);
 export const db = getFirestore(app);
 export const functions = getFunctions(app, "us-central1");
 export const auth = getAuth(app);
+
+// Set persistence for Safari compatibility
+setPersistence(auth, browserLocalPersistence).catch((error) => {
+  console.warn('Failed to set auth persistence:', error);
+});
 
 

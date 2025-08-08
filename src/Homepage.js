@@ -5,7 +5,18 @@ import { Link } from "react-router-dom";
 function HomePage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-yellow-50 to-white flex flex-col justify-between px-4 sm:px-6 py-6 sm:py-10">
-      <div className="flex-grow flex items-center justify-center">
+      {/* Navigation Bar */}
+      <nav className="fixed top-0 left-0 right-0 bg-white border-b shadow-sm z-50 py-3 px-4 sm:px-6">
+        <div className="flex justify-between items-center">
+          <h2 className="text-lg sm:text-xl font-bold text-green-700">J and J Kitchen</h2>
+          <div className="flex items-center space-x-3 sm:space-x-4 text-xs sm:text-sm font-medium text-gray-700">
+            <Link to="/" className="hover:text-green-700 transition-colors duration-200 py-2 px-1">Home</Link>
+            <Link to="/menu" className="hover:text-green-700 transition-colors duration-200 py-2 px-1">Menu</Link>
+            <Link to="/admin" className="hover:text-green-700 transition-colors duration-200 py-2 px-2 bg-green-100 rounded">Admin</Link>
+          </div>
+        </div>
+      </nav>
+      <div className="flex-grow flex items-center justify-center pt-16 sm:pt-20">
         <div className="bg-white rounded-2xl shadow-xl max-w-2xl w-full p-6 sm:p-10 text-center border border-green-100">
           <img
             src={Logo}
