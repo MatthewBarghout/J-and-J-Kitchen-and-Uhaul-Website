@@ -1,6 +1,6 @@
 // src/AdminPanel.js
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { db, functions } from "./firebase";
 import {
   collection,
@@ -26,49 +26,84 @@ export default function AdminPanel() {
   const [refundingOrders, setRefundingOrders] = useState(new Set());
   const [previousOrderCount, setPreviousOrderCount] = useState(0);
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
+  
+  // Detect if we're on mobile
+  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
   // Request notification permission
   useEffect(() => {
-    if ('Notification' in window && Notification.permission === 'default') {
-      Notification.requestPermission().then(permission => {
-        setNotificationsEnabled(permission === 'granted');
-      });
-    } else if (Notification.permission === 'granted') {
-      setNotificationsEnabled(true);
+    try {
+      if ('Notification' in window && Notification.permission === 'default') {
+        Notification.requestPermission().then(permission => {
+          setNotificationsEnabled(permission === 'granted');
+        }).catch(error => {
+          console.log('Could not request notification permission:', error.message);
+          setNotificationsEnabled(false);
+        });
+      } else if (Notification.permission === 'granted') {
+        setNotificationsEnabled(true);
+      }
+    } catch (error) {
+      console.log('Notification API not supported:', error.message);
+      setNotificationsEnabled(false);
     }
   }, []);
 
   // Notification functions  
   const playNotificationSound = () => {
-    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-    const oscillator = audioContext.createOscillator();
-    const gainNode = audioContext.createGain();
-    
-    oscillator.connect(gainNode);
-    gainNode.connect(audioContext.destination);
-    
-    oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
-    oscillator.frequency.setValueAtTime(1000, audioContext.currentTime + 0.1);
-    oscillator.frequency.setValueAtTime(800, audioContext.currentTime + 0.2);
-    
-    gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
-    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
-    
-    oscillator.start(audioContext.currentTime);
-    oscillator.stop(audioContext.currentTime + 0.3);
-  };
+    try {
+      // Check if AudioContext is supported and can be created
+      if (!window.AudioContext && !window.webkitAudioContext) {
+        console.log('AudioContext not supported on this device');
+        return;
+      }
 
-  const showNotification = (title, body) => {
-    if (notificationsEnabled && 'Notification' in window) {
-      new Notification(title, {
-        body,
-        icon: '/logo192.png',
-        badge: '/logo192.png',
-        tag: 'new-order',
-        requireInteraction: true
-      });
+      const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+      const audioContext = new AudioContextClass();
+      
+      // Mobile browsers require user interaction before audio can play
+      if (audioContext.state === 'suspended') {
+        console.log('AudioContext suspended (mobile browser policy)');
+        return;
+      }
+
+      const oscillator = audioContext.createOscillator();
+      const gainNode = audioContext.createGain();
+      
+      oscillator.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+      
+      oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
+      oscillator.frequency.setValueAtTime(1000, audioContext.currentTime + 0.1);
+      oscillator.frequency.setValueAtTime(800, audioContext.currentTime + 0.2);
+      
+      gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+      
+      oscillator.start(audioContext.currentTime);
+      oscillator.stop(audioContext.currentTime + 0.3);
+    } catch (error) {
+      console.log('Could not play notification sound:', error.message);
+      // Fail silently on mobile - don't crash the app
     }
   };
+
+  const showNotification = useCallback((title, body) => {
+    try {
+      if (notificationsEnabled && 'Notification' in window && Notification.permission === 'granted') {
+        new Notification(title, {
+          body,
+          icon: '/logo192.png',
+          badge: '/logo192.png',
+          tag: 'new-order',
+          requireInteraction: true
+        });
+      }
+    } catch (error) {
+      console.log('Could not show notification:', error.message);
+      // Fail silently on mobile - don't crash the app
+    }
+  }, [notificationsEnabled]);
 
   // subscribe to orders
   useEffect(() => {
@@ -78,15 +113,21 @@ export default function AdminPanel() {
       
       // Check for new orders and trigger notification
       if (previousOrderCount > 0 && activeOrders.length > previousOrderCount && notificationsEnabled) {
-        playNotificationSound();
-        showNotification('New Order Received!', 'A new order has come in.');
+        try {
+          if (!isMobile) {
+            playNotificationSound();
+          }
+          showNotification('New Order Received!', 'A new order has come in.');
+        } catch (error) {
+          console.log('Notification error:', error.message);
+        }
       }
       
       setOrders(newOrders);
       setPreviousOrderCount(activeOrders.length);
     });
     return () => unsub();
-  }, [previousOrderCount, notificationsEnabled]);
+  }, [previousOrderCount, notificationsEnabled, showNotification, isMobile]);
 
   // subscribe to admin/settings
   useEffect(() => {
