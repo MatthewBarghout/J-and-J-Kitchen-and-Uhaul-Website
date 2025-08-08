@@ -23,6 +23,8 @@ export default function App() {
   const [confirmationDetails, setConfirmationDetails] = useState(null);
   const [customerName, setCustomerName] = useState("");
   const [customerPhone, setCustomerPhone] = useState("");
+  const [phoneExtension, setPhoneExtension] = useState("+1");
+  const [smsConsent, setSmsConsent] = useState(false);
   const [showNameError, setShowNameError] = useState(false);
   const [showPhoneError, setShowPhoneError] = useState(false);
 
@@ -157,6 +159,8 @@ export default function App() {
     setCart([]);
     setCustomerName("");
     setCustomerPhone("");
+    setPhoneExtension("+1");
+    setSmsConsent(false);
     setShowNameError(false);
     setShowPhoneError(false);
   };
@@ -259,14 +263,46 @@ export default function App() {
             />
             {showNameError && <p className="text-red-500 text-sm mt-1">Name is required</p>}
 
-            <input
-              type="tel"
-              placeholder="Enter your phone (+12345556789)"
-              className="mt-4 w-full border p-2 rounded"
-              value={customerPhone}
-              onChange={(e) => setCustomerPhone(e.target.value)}
-            />
-            {showPhoneError && <p className="text-red-500 text-sm mt-1">Phone is required</p>}
+            <div className="mt-4 space-y-2">
+              <label className="block text-sm font-medium text-gray-700">Phone Number</label>
+              <div className="flex space-x-2">
+                <select
+                  value={phoneExtension}
+                  onChange={(e) => setPhoneExtension(e.target.value)}
+                  className="border p-2 rounded w-20"
+                >
+                  <option value="+1">+1</option>
+                  <option value="+44">+44</option>
+                  <option value="+33">+33</option>
+                  <option value="+49">+49</option>
+                  <option value="+39">+39</option>
+                  <option value="+34">+34</option>
+                  <option value="+86">+86</option>
+                  <option value="+81">+81</option>
+                  <option value="+91">+91</option>
+                </select>
+                <input
+                  type="tel"
+                  placeholder="5556789"
+                  className="flex-1 border p-2 rounded"
+                  value={customerPhone}
+                  onChange={(e) => setCustomerPhone(e.target.value)}
+                />
+              </div>
+              {showPhoneError && <p className="text-red-500 text-sm mt-1">Phone is required</p>}
+            </div>
+
+            <div className="mt-4">
+              <label className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  checked={smsConsent}
+                  onChange={(e) => setSmsConsent(e.target.checked)}
+                  className="rounded border-gray-300 text-green-600 focus:ring-green-500"
+                />
+                <span className="text-sm text-gray-700">I consent to receive SMS notifications about my order</span>
+              </label>
+            </div>
 
             <div className="mt-6 text-right space-y-1">
               <p>Subtotal: ${subtotal.toFixed(2)}</p>
@@ -286,7 +322,8 @@ export default function App() {
                 cartItems={cart}
                 totalAmount={total}
                 customerName={customerName}
-                customerPhone={customerPhone}
+                customerPhone={`${phoneExtension}${customerPhone}`}
+                smsConsent={smsConsent}
                 onPaymentSuccess={handlePaymentSuccess}
                 disabled={cart.length === 0}
               />

@@ -7,12 +7,12 @@ export default function SquareCheckout({
   totalAmount,
   customerName,
   customerPhone,
+  smsConsent,
   onPaymentSuccess,
 }) {
   const [cardAttached, setCardAttached] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [smsConsent, setSmsConsent] = useState(false);
   const cardRef = useRef(null);
   const hasInitialized = useRef(false);
 
@@ -87,15 +87,6 @@ export default function SquareCheckout({
     <form onSubmit={handleSubmit} className="space-y-4 w-full max-w-md">
       {error && <p className="text-red-600 text-sm">{error}</p>}
       <div id="card-container" className="rounded-md border px-4 py-3 shadow-sm" />
-      <label className="flex items-center space-x-2 text-sm">
-        <input
-          type="checkbox"
-          checked={smsConsent}
-          onChange={(e) => setSmsConsent(e.target.checked)}
-          className="rounded border-gray-300 text-green-600 focus:ring-green-500"
-        />
-        <span>I consent to receive SMS notifications about my order</span>
-      </label>
       <button
         type="submit"
         disabled={!cardAttached || loading || cartItems.length === 0}
