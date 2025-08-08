@@ -259,12 +259,12 @@ export default function AdminPanel() {
   }, {});
 
   return (
-    <div className="p-6 max-w-5xl mx-auto">
-      <div className="flex justify-between items-center mb-4">
-        <h1 className="text-2xl font-bold">Admin Panel</h1>
-        <div className="flex items-center space-x-4">
+    <div className="p-3 sm:p-6 max-w-5xl mx-auto">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-4 space-y-2 sm:space-y-0">
+        <h1 className="text-xl sm:text-2xl font-bold">Admin Panel</h1>
+        <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-4">
           <div className="flex items-center space-x-2">
-            <span className="text-sm text-gray-600">Notifications:</span>
+            <span className="text-xs sm:text-sm text-gray-600">Notifications:</span>
             <button
               onClick={() => {
                 if (notificationsEnabled) {
@@ -275,7 +275,7 @@ export default function AdminPanel() {
                   });
                 }
               }}
-              className={`px-3 py-1 rounded text-sm ${
+              className={`px-2 py-1 sm:px-3 sm:py-1 rounded text-xs sm:text-sm min-w-[60px] ${
                 notificationsEnabled 
                   ? 'bg-green-600 text-white hover:bg-green-700' 
                   : 'bg-gray-600 text-white hover:bg-gray-700'
@@ -284,10 +284,10 @@ export default function AdminPanel() {
               {notificationsEnabled ? '🔔 ON' : '🔕 OFF'}
             </button>
           </div>
-          <span className="text-sm text-gray-600">Logged in as: {currentUser?.email}</span>
+          <span className="text-xs sm:text-sm text-gray-600 truncate max-w-[200px] sm:max-w-none">Logged in as: {currentUser?.email}</span>
           <button
             onClick={logout}
-            className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+            className="px-3 py-2 sm:px-4 sm:py-2 bg-red-600 text-white rounded hover:bg-red-700 text-sm sm:text-base"
           >
             Logout
           </button>
@@ -296,29 +296,30 @@ export default function AdminPanel() {
 
       <button
         onClick={togglePauseOrders}
-        className={`mb-6 px-4 py-2 rounded text-white ${orderPaused ? "bg-red-600" : "bg-green-600"}`}
+        className={`mb-6 w-full sm:w-auto px-4 py-3 sm:py-2 rounded text-white font-semibold text-base sm:text-sm ${orderPaused ? "bg-red-600 hover:bg-red-700" : "bg-green-600 hover:bg-green-700"}`}
       >
         {orderPaused ? "Resume Orders" : "Pause Orders"}
       </button>
 
-      <h2 className="text-xl font-semibold mb-2">Mark Items Unavailable</h2>
+      <h2 className="text-lg sm:text-xl font-semibold mb-2">Mark Items Unavailable</h2>
       {Object.entries(groupedMenu).map(([cat, items]) => (
         <div key={cat} className="mb-4 border rounded">
           <button
             onClick={() => setExpandedCategory(expandedCategory === cat ? null : cat)}
-            className="w-full text-left px-4 py-2 bg-gray-100 font-semibold"
+            className="w-full text-left px-3 py-3 sm:px-4 sm:py-2 bg-gray-100 font-semibold text-sm sm:text-base hover:bg-gray-200 transition-colors"
           >
             {cat}
           </button>
           {expandedCategory === cat && (
-            <div className="p-3 space-y-2">
+            <div className="p-2 sm:p-3 space-y-2">
               {items.map(item => (
-                <div key={item.id} className="flex justify-between items-center text-sm">
+                <div key={item.id} className="flex justify-between items-center text-xs sm:text-sm py-1">
                   <span>{item.name}</span>
                   <input
                     type="checkbox"
                     checked={unavailableItems.includes(item.id)}
                     onChange={() => toggleUnavailable(item.id)}
+                    className="w-4 h-4 sm:w-3 sm:h-3"
                   />
                 </div>
               ))}
@@ -327,29 +328,29 @@ export default function AdminPanel() {
         </div>
       ))}
 
-      <h2 className="text-xl font-semibold mt-8 mb-2">Live Orders</h2>
+      <h2 className="text-lg sm:text-xl font-semibold mt-8 mb-2">Live Orders</h2>
       <div className="space-y-4">
         {orders.filter(o => !o.ready).map(order => (
-          <div key={order.id} className="border rounded p-4 shadow">
-            <div className="flex justify-between mb-2">
+          <div key={order.id} className="border rounded p-3 sm:p-4 shadow">
+            <div className="flex flex-col sm:flex-row sm:justify-between mb-3 space-y-2 sm:space-y-0">
               <div>
-                <h2 className="font-semibold">Order for {order.customerName}</h2>
-                <p className="text-sm text-gray-600">Payment ID: {order.paymentId}</p>
+                <h2 className="font-semibold text-base sm:text-lg">Order for {order.customerName}</h2>
+                <p className="text-xs sm:text-sm text-gray-600 break-all">Payment ID: {order.paymentId}</p>
                 {order.refunded && (
                   <p className="text-sm text-red-600 font-semibold">REFUNDED</p>
                 )}
               </div>
-              <div className="flex space-x-2">
+              <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2 w-full sm:w-auto">
                 <button
                   onClick={() => printOrder(order)}
-                  className="bg-gray-600 text-white px-3 py-1 rounded hover:bg-gray-700 text-sm"
+                  className="bg-gray-600 text-white px-3 py-2 sm:py-1 rounded hover:bg-gray-700 text-sm font-medium"
                   title="Print Order"
                 >
                   🖨️ Print
                 </button>
                 <button
                   onClick={() => handleMarkReady(order.id)}
-                  className="bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700"
+                  className="bg-blue-600 text-white px-3 py-2 sm:py-1 rounded hover:bg-blue-700 text-sm font-medium disabled:opacity-50"
                   disabled={order.refunded}
                 >
                   Mark Ready
@@ -357,7 +358,7 @@ export default function AdminPanel() {
                 {!order.refunded && (
                   <button
                     onClick={() => handleCancelOrder(order)}
-                    className="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700 disabled:opacity-50"
+                    className="bg-red-600 text-white px-3 py-2 sm:py-1 rounded hover:bg-red-700 disabled:opacity-50 text-sm font-medium"
                     disabled={refundingOrders.has(order.id)}
                   >
                     {refundingOrders.has(order.id) ? "Cancelling..." : "Cancel Order"}
@@ -367,29 +368,29 @@ export default function AdminPanel() {
             </div>
 
             {order.items.map((item, i) => (
-              <div key={i} className="ml-4 mb-1">
-                <p className="font-medium">
+              <div key={i} className="ml-2 sm:ml-4 mb-2 p-2 bg-gray-50 rounded">
+                <p className="font-medium text-sm sm:text-base">
                   {item.quantity}× {item.name} @ ${item.price.toFixed(2)}
                 </p>
-                {item.substitution && <p className="text-sm">Substitution: {item.substitution}</p>}
+                {item.substitution && <p className="text-xs sm:text-sm text-gray-600">Substitution: {item.substitution}</p>}
                 {item.wingUpgrades?.sauced && (
-                  <p className="text-sm">Sauced in: {item.wingUpgrades.saucedFlavor}</p>
+                  <p className="text-xs sm:text-sm text-gray-600">Sauced in: {item.wingUpgrades.saucedFlavor}</p>
                 )}
                 {item.selectedOptions?.length > 0 && (
-                  <p className="text-sm">Options: {item.selectedOptions.join(", ")}</p>
+                  <p className="text-xs sm:text-sm text-gray-600">Options: {item.selectedOptions.join(", ")}</p>
                 )}
                 {item.sauces?.length > 0 && (
-                  <p className="text-sm">Sauces: {item.sauces.join(", ")}</p>
+                  <p className="text-xs sm:text-sm text-gray-600">Sauces: {item.sauces.join(", ")}</p>
                 )}
               </div>
             ))}
 
-            <div className="mt-2">
+            <div className="mt-3 flex flex-col sm:flex-row sm:items-center space-y-1 sm:space-y-0">
               <label className="text-sm font-medium">Prep Time:</label>
               <select
                 value={prepTimes[order.id] || ""}
                 onChange={e => handlePrepTimeChange(order.id, e.target.value)}
-                className="ml-2 border rounded px-2 py-1 text-sm"
+                className="sm:ml-2 border rounded px-3 py-2 text-sm w-full sm:w-auto"
               >
                 <option value="">Select</option>
                 <option value="5 min">5 min</option>
@@ -400,7 +401,7 @@ export default function AdminPanel() {
               </select>
             </div>
 
-            <p className="mt-2 text-gray-600 text-sm">
+            <p className="mt-3 text-gray-600 text-sm font-semibold bg-green-50 p-2 rounded">
               Total: ${(order.amount / 100).toFixed(2)}
             </p>
           </div>
