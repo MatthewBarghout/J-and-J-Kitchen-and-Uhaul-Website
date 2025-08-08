@@ -13,7 +13,6 @@ const db = admin.firestore();
 exports.chargeCard = onCall({
   region: "us-central1",
   secrets: ["SQUARE_ACCESS_TOKEN"],
-  enforceAppCheck: true,
 }, async (req) => {
   // Security: Only log essential info, never sensitive payment data
   logger.info("chargeCard called");
@@ -62,6 +61,7 @@ exports.chargeCard = onCall({
   });
 
   try {
+    logger.info("Attempting Square payment", {amount, environment: "sandbox"});
     const {paymentsApi} = squareClient;
     const {result} = await paymentsApi.createPayment({
       sourceId,
@@ -69,6 +69,7 @@ exports.chargeCard = onCall({
       amountMoney: {amount, currency: "USD"},
       note: `Order from ${customerName.substring(0, 50)}`,
     });
+    logger.info("Square payment successful", {paymentId: result.payment?.id});
     const p = result.payment;
 
     // Security: Use transaction for atomic operation
@@ -115,7 +116,6 @@ exports.chargeCard = onCall({
 exports.sendPrepTimeText = onCall({
   region: "us-central1",
   secrets: ["TWILIO_ACCOUNT_SID", "TWILIO_AUTH_TOKEN", "TWILIO_PHONE_NUMBER"],
-  enforceAppCheck: true,
 }, async (req) => {
   // Security: Only log essential info, never phone numbers
   logger.info("sendPrepTimeText called");
@@ -196,7 +196,6 @@ exports.sendPrepTimeText = onCall({
 exports.refundPayment = onCall({
   region: "us-central1",
   secrets: ["SQUARE_ACCESS_TOKEN"],
-  enforceAppCheck: true,
 }, async (req) => {
   // Security: Only log essential info, never payment IDs or sensitive data
   logger.info("refundPayment called");

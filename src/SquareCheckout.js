@@ -24,7 +24,7 @@ export default function SquareCheckout({
       if (container) container.innerHTML = "";
       try {
         const payments = window.Square.payments(
-          "sandbox-sq0idb-80XauowToOuFUbMK06sGDQ", // sandbox App ID for dev
+          "sandbox-sq0idb-80XauowToOuFUbMK06sGDQ",
           "sandbox"
         );
         card = await payments.card();
