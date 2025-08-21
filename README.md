@@ -207,7 +207,7 @@ Private project - All rights reserved
 
 ## Support
 
-For technical support or questions about this restaurant ordering system, please contact the development team.
+For technical support or questions about this restaurant ordering system, please contact the development team. (mattbarg@unc.edu)
 
 ---
 
